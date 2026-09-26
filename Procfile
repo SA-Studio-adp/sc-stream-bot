@@ -1,1 +1,1 @@
-web: python -m streambot
+web: sh entrypoint.sh

@@ -1,5 +1,4 @@
 aiohttp
-pyrofork
 python-dotenv
 tgcrypto
 motor
@@ -8,3 +7,6 @@ dnspython
 requests
 jinja2
 uvloop; sys_platform != "win32"
+# NOTE: the Pyrogram-compatible package itself (pyrofork or wzgram) is
+# NOT listed here — it's installed at container start by entrypoint.sh,
+# based on the PYROGRAM_MODE env var. See entrypoint.sh for why.

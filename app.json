@@ -1,34 +1,113 @@
 {
   "name": "FileStreamBot",
   "description": "A Telegram Bot to Convert Telegram Files To Direct & Streamable Links.",
-  "keywords": ["telegram", "streaming", "bot"],
+  "keywords": [
+    "telegram",
+    "streaming",
+    "bot"
+  ],
   "repository": "",
   "success_url": "/status",
   "logo": "",
   "env": {
-    "API_ID": {"description": "Telegram API ID from my.telegram.org", "required": true},
-    "API_HASH": {"description": "Telegram API hash from my.telegram.org", "required": true},
-    "BOT_TOKEN": {"description": "Bot token from @BotFather", "required": true},
-    "DATABASE_URL": {"description": "MongoDB connection URI", "required": true},
-    "FLOG_CHANNEL": {"description": "Channel ID where uploaded files get logged/stored", "required": true},
-    "ULOG_CHANNEL": {"description": "Channel ID where new-user notifications go", "required": true},
-    "OWNER_ID": {"description": "Your Telegram user ID", "required": false},
-    "FQDN": {"description": "Public hostname of your deployment, e.g. my-bot.onrender.com", "required": false},
-    "HAS_SSL": {"description": "true if your public URL is https", "required": false},
-    "NO_PORT": {"description": "true to omit the port from generated links (Render/Koyeb)", "required": false},
-    "AUTO_PING": {"description": "true/false. Force keep-alive pinger on/off; unset = auto-detect", "required": false},
-    "PING_INTERVAL": {"description": "Seconds between self-pings. Default 600", "required": false},
-    "CHUNK_SIZE": {"description": "Bytes fetched per Telegram request while streaming. Default 1048576", "required": false},
-    "MAX_STREAMS_PER_IP": {"description": "Max concurrent /dl downloads per IP. Default 8", "required": false},
-    "RATE_LIMIT_REQUESTS": {"description": "Max /dl or /watch requests per IP per window. Default 60", "required": false},
-    "RATE_LIMIT_WINDOW": {"description": "Window in seconds for RATE_LIMIT_REQUESTS. Default 60", "required": false},
-    "MAX_CONCURRENT_TRANSMISSIONS": {"description": "Parallel MTProto connections per client. Default 6", "required": false},
-    "MULTI_TOKEN1": {"description": "Optional extra bot token/session string for load-balanced streaming", "required": false},
-    "FORCE_UPDATES_CHANNEL": {"description": "true to require users join FORCE_SUB_ID before use", "required": false},
-    "FORCE_SUB_ID": {"description": "Channel ID users must join if FORCE_UPDATES_CHANNEL is true", "required": false},
-    "AUTH_USERS": {"description": "Space-separated user IDs allowed to use the bot (blank = everyone)", "required": false}
+    "API_ID": {
+      "description": "Telegram API ID from my.telegram.org",
+      "required": true
+    },
+    "API_HASH": {
+      "description": "Telegram API hash from my.telegram.org",
+      "required": true
+    },
+    "BOT_TOKEN": {
+      "description": "Bot token from @BotFather",
+      "required": true
+    },
+    "DATABASE_URL": {
+      "description": "MongoDB connection URI",
+      "required": true
+    },
+    "FLOG_CHANNEL": {
+      "description": "Channel ID where uploaded files get logged/stored",
+      "required": true
+    },
+    "ULOG_CHANNEL": {
+      "description": "Channel ID where new-user notifications go",
+      "required": true
+    },
+    "OWNER_ID": {
+      "description": "Your Telegram user ID",
+      "required": false
+    },
+    "FQDN": {
+      "description": "Public hostname of your deployment, e.g. my-bot.onrender.com",
+      "required": false
+    },
+    "HAS_SSL": {
+      "description": "true if your public URL is https",
+      "required": false
+    },
+    "NO_PORT": {
+      "description": "true to omit the port from generated links (Render/Koyeb)",
+      "required": false
+    },
+    "AUTO_PING": {
+      "description": "true/false. Force keep-alive pinger on/off; unset = auto-detect",
+      "required": false
+    },
+    "PING_INTERVAL": {
+      "description": "Seconds between self-pings. Default 600",
+      "required": false
+    },
+    "CHUNK_SIZE": {
+      "description": "Bytes fetched per Telegram request while streaming. Default 1048576",
+      "required": false
+    },
+    "MAX_STREAMS_PER_IP": {
+      "description": "Max concurrent /dl downloads per IP. Default 8",
+      "required": false
+    },
+    "RATE_LIMIT_REQUESTS": {
+      "description": "Max /dl or /watch requests per IP per window. Default 60",
+      "required": false
+    },
+    "RATE_LIMIT_WINDOW": {
+      "description": "Window in seconds for RATE_LIMIT_REQUESTS. Default 60",
+      "required": false
+    },
+    "MAX_CONCURRENT_TRANSMISSIONS": {
+      "description": "Parallel MTProto connections per client. Default 6",
+      "required": false
+    },
+    "MULTI_TOKEN1": {
+      "description": "Optional extra bot token/session string for load-balanced streaming",
+      "required": false
+    },
+    "FORCE_UPDATES_CHANNEL": {
+      "description": "true to require users join FORCE_SUB_ID before use",
+      "required": false
+    },
+    "FORCE_SUB_ID": {
+      "description": "Channel ID users must join if FORCE_UPDATES_CHANNEL is true",
+      "required": false
+    },
+    "AUTH_USERS": {
+      "description": "Space-separated user IDs allowed to use the bot (blank = everyone)",
+      "required": false
+    },
+    "PYROGRAM_MODE": {
+      "description": "Which Pyrogram-compatible library to install: 'py' (default, pyrofork) or 'wzgram' (https://pypi.org/project/wzgram/). Installed at container start, not baked into the image.",
+      "required": false
+    }
   },
-  "buildpacks": [{"url": "heroku/python"}],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
   "stack": "heroku-22",
-  "formation": {"web": {"quantity": 1}}
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  }
 }
