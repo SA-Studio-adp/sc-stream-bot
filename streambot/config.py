@@ -1,13 +1,3 @@
-"""
-Central, validated configuration.
-
-Unlike the previous version (which crashed with a raw TypeError if a
-required var like FLOG_CHANNEL was missing), this module validates
-everything up front and raises one clear, readable error listing exactly
-what's missing/wrong — so a bad deployment fails in the first second with
-a message you can act on, instead of a cryptic traceback three files deep.
-"""
-
 import sys
 from os import environ as env
 
@@ -57,7 +47,7 @@ class Telegram:
     FILE_PIC = env.get("FILE_PIC", "https://graph.org/file/5bb9935be0229adf98b73.jpg")
     START_PIC = env.get("START_PIC", "https://graph.org/file/290af25276fa34fa8f0aa.jpg")
     VERIFY_PIC = env.get("VERIFY_PIC", "https://graph.org/file/736e21cc0efa4d8c2a0e4.jpg")
-    MULTI_CLIENT = False  # flipped True at runtime once extra clients start
+    MULTI_CLIENT = False
     MODE = env.get("MODE", "primary")
     SECONDARY = MODE.strip().lower() == "secondary"
     AUTH_USERS = list(set(int(x) for x in str(env.get("AUTH_USERS", "")).split()))
@@ -66,10 +56,7 @@ class Telegram:
 class Server:
     PORT = int(env.get("PORT", 8080))
     BIND_ADDRESS = str(env.get("BIND_ADDRESS", "0.0.0.0"))
-    # How often (seconds) the bot pings its own /ping endpoint to prevent
-    # free-tier hosts (Render, Koyeb, Replit, etc.) from sleeping.
     PING_INTERVAL = int(env.get("PING_INTERVAL", "600"))
-    # Force the self-ping loop on/off; unset = auto-detect from FQDN.
     AUTO_PING = env.get("AUTO_PING", None)
     HAS_SSL = _bool("HAS_SSL")
     NO_PORT = _bool("NO_PORT")
@@ -93,16 +80,10 @@ class Performance:
     RATE_LIMIT_WINDOW = int(env.get("RATE_LIMIT_WINDOW", "60"))
     STREAM_RETRIES = int(env.get("STREAM_RETRIES", "3"))
     STREAM_RETRY_DELAY = float(env.get("STREAM_RETRY_DELAY", "1.0"))
-    # Parallel MTProto connections per Pyrogram Client for transmissions.
-    # Pyrogram's own default is 1 (fully serial); raising this lets one
-    # client fetch multiple chunks concurrently — speeds up both send and
-    # receive. Tune down if you start seeing FloodWaits.
     MAX_CONCURRENT_TRANSMISSIONS = int(env.get("MAX_CONCURRENT_TRANSMISSIONS", "6"))
 
 
 def validate_and_bind():
-    """Fail fast, with one readable message, instead of a deep traceback
-    the first time something touches a missing/invalid required var."""
     errors = []
     for name, caster in (
         ("API_ID", _require_int),

@@ -1,5 +1,3 @@
-"""Self-ping keep-alive so free-tier hosts don't sleep this process."""
-
 import asyncio
 import logging
 

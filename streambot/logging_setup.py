@@ -17,6 +17,4 @@ def configure_logging():
     )
     logging.getLogger("aiohttp").setLevel(logging.ERROR)
     logging.getLogger("aiohttp.web").setLevel(logging.ERROR)
-    # WARNING (not ERROR) so anything unusual in Pyrogram — like a handler
-    # failing to register — actually shows up instead of vanishing.
     logging.getLogger("pyrogram").setLevel(logging.WARNING)

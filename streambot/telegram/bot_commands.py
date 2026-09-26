@@ -1,5 +1,3 @@
-"""Pushes the bot's command list to Telegram on every startup."""
-
 import logging
 
 from pyrogram import Client

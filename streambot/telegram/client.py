@@ -1,16 +1,3 @@
-"""
-Pyrogram client construction.
-
-Deliberately does NOT use Pyrogram's `plugins={"root": ...}` auto-loading.
-That mechanism silently imports handler files at Client-construction time
-and binds decorators to whatever event loop exists *then* — which is
-exactly what caused the "bot builds fine, connects fine, but never
-responds to any message" bug in the previous version, once uvloop swapped
-the event loop in afterward. Handlers here are registered explicitly, in
-`register_handlers()`, called after the event loop is fully set up — so
-there's no import-time magic and no ordering trap.
-"""
-
 import asyncio
 import logging
 
@@ -30,16 +17,12 @@ def create_bot() -> Client:
         bot_token=Telegram.BOT_TOKEN,
         sleep_threshold=Telegram.SLEEP_THRESHOLD,
         workers=Telegram.WORKERS,
-        no_updates=Telegram.SECONDARY,  # secondary instances don't need updates at all
+        no_updates=Telegram.SECONDARY,
         max_concurrent_transmissions=Performance.MAX_CONCURRENT_TRANSMISSIONS,
     )
 
 
 async def start_extra_clients(bot: Client, multi_clients: dict, work_loads: dict):
-    """Start any MULTI_TOKEN* clients for load-balanced streaming, and
-    always register the primary bot itself as client 0 — a client missing
-    from this dict silently breaks streaming for it, which is exactly what
-    happened in an earlier version of this bot."""
     from os import environ
 
     multi_clients[0] = bot

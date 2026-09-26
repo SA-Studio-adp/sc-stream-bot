@@ -1,10 +1,3 @@
-"""
-User/channel access checks and stream-link generation. Kept behaviorally
-identical to the previous version — same DB fields, same link format
-(/watch/{id}, /dl/{id}) — so old links and existing user/ban records
-keep working unchanged.
-"""
-
 import asyncio
 import logging
 from typing import Union
@@ -106,8 +99,6 @@ async def gen_link(_id, bot_username: str):
 
 
 async def gen_linkx(_id, bot_username: str):
-    """Same as gen_link but for the compact /start deep-link reply (no
-    revoke/close buttons, since there's no owning chat context)."""
     db = get_database()
     file_info = await db.get_file(_id)
     file_name = file_info["file_name"]
@@ -199,8 +190,6 @@ async def verify_user(bot, message: Message) -> bool:
             return False
         return True
     except Exception as e:
-        # Never let an unexpected error (DB hiccup, bad channel ID, etc.)
-        # make the bot look completely unresponsive.
         logger.error(f"verify_user failed: {e}")
         try:
             await message.reply_text(

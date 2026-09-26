@@ -1,18 +1,3 @@
-"""
-MongoDB access layer.
-
-Collection/field names are kept byte-for-byte identical to the previous
-version (`users`, `blacklist`, `file`, with the same field names within
-each) so that a database from an older deployment keeps working without
-any migration — every link ever generated still resolves.
-
-Only one Database instance should exist per process; use get_database()
-rather than constructing Database() directly, so every module shares the
-same Mongo connection pool instead of each file opening its own (the old
-codebase had five separate `Database(...)` instantiations scattered across
-plugin files).
-"""
-
 import logging
 import time
 
@@ -30,11 +15,6 @@ _instance = None
 
 class Database:
     def __init__(self, uri: str, database_name: str):
-        # Without explicit timeouts, an unreachable Mongo host (e.g. IP not
-        # allow-listed on Atlas) makes every call hang indefinitely instead
-        # of failing — which looks exactly like "the bot stopped
-        # responding" from the outside. Fail fast instead, with a clear
-        # error, so it's obvious what's actually wrong.
         self._client = motor.motor_asyncio.AsyncIOMotorClient(
             uri,
             serverSelectionTimeoutMS=10000,
@@ -54,7 +34,6 @@ class Database:
             logger.error(f"MongoDB is not reachable: {e}")
             return False
 
-    # ---------------------[ users ]---------------------
     def _new_user(self, id):
         return dict(id=id, join_date=time.time(), Links=0)
 
@@ -79,7 +58,6 @@ class Database:
         elif operation == "+":
             await self.col.update_one({"id": id}, {"$inc": {"Links": 1}})
 
-    # ---------------------[ ban list ]---------------------
     def _black_user(self, id):
         return dict(id=id, ban_date=time.time())
 
@@ -95,7 +73,6 @@ class Database:
     async def total_banned_users_count(self):
         return await self.black.count_documents({})
 
-    # ---------------------[ files ]---------------------
     async def add_file(self, file_info: dict):
         file_info["time"] = time.time()
         existing = await self.get_file_by_fileuniqueid(
@@ -142,7 +119,6 @@ class Database:
 
 
 def init_database(uri: str, database_name: str) -> Database:
-    """Call exactly once at startup."""
     global _instance
     _instance = Database(uri, database_name)
     return _instance

@@ -1,10 +1,5 @@
 """
-Fetches raw file bytes from Telegram's MTProto layer in chunks. Logic is
-unchanged from the previous version (it was already correct after the
-earlier retry/backoff hardening) — just takes `work_loads` as an explicit
-constructor argument now instead of importing a module-level global, so
-there's one obvious owner of that shared state (the app object) instead of
-every module reaching into `telegram.bot`'s globals directly.
+Fetches raw file bytes from Telegram's MTProto layer in chunks.
 """
 
 import asyncio
@@ -20,6 +15,21 @@ from streambot.config import Performance
 from streambot.utils.file_info import get_file_ids
 
 logger = logging.getLogger(__name__)
+
+# Substrings that show up in pyrogram's own error messages when a media
+# session's underlying TCP transport has died (e.g. after a network blip)
+# but the Session object itself is still cached as "good". Once we see
+# one of these, the cached session for that DC must be thrown away, or
+# every subsequent request to that DC retries the same dead connection
+# forever — this was the cause of "a handful of files just never load"
+# even though everything else works: those files happened to live on the
+# one DC whose session died.
+_DEAD_TRANSPORT_MARKERS = ("closed=True", "handler is closed", "transport is closed")
+
+
+def _looks_like_dead_transport(exc: Exception) -> bool:
+    msg = str(exc)
+    return any(marker in msg for marker in _DEAD_TRANSPORT_MARKERS)
 
 
 class ByteStreamer:
@@ -37,9 +47,6 @@ class ByteStreamer:
         return self.cached_file_ids[db_id]
 
     async def generate_file_properties(self, db_id: str, multi_clients) -> FileId:
-        # No live chat message exists for a direct stream link — pass None
-        # (not the Message *class*, which was the previous version's bug)
-        # and let get_file_ids fall back to the DB-known filename instead.
         file_id = await get_file_ids(self.client, db_id, multi_clients, None, self.main_bot)
         self.cached_file_ids[db_id] = file_id
         return file_id
@@ -129,8 +136,14 @@ class ByteStreamer:
                     logger.warning(f"FloodWait {e.value}s while streaming")
                     await asyncio.sleep(e.value)
                     last_err = e
-                except (TimeoutError, ConnectionError, OSError) as e:
+                except (TimeoutError, ConnectionError, OSError, RuntimeError) as e:
                     last_err = e
+                    if _looks_like_dead_transport(e):
+                        logger.warning(
+                            f"Media session for DC {file_id.dc_id} has a dead transport, discarding it: {e}"
+                        )
+                        client.media_sessions.pop(file_id.dc_id, None)
+                        break
                     if attempt < Performance.STREAM_RETRIES - 1:
                         await asyncio.sleep(Performance.STREAM_RETRY_DELAY * (attempt + 1))
             if last_err:
@@ -162,7 +175,9 @@ class ByteStreamer:
         except AuthBytesInvalid:
             logger.warning(f"Invalid auth for DC {file_id.dc_id}, dropping cached session.")
             client.media_sessions.pop(file_id.dc_id, None)
-        except (ConnectionError, OSError) as e:
+        except (ConnectionError, OSError, RuntimeError) as e:
+            if _looks_like_dead_transport(e):
+                client.media_sessions.pop(file_id.dc_id, None)
             logger.warning(f"Stream dropped/network error: {e}")
         finally:
             self.work_loads[index] -= 1

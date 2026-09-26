@@ -1,10 +1,3 @@
-"""
-Simple in-memory sliding-window rate limiter and a per-IP concurrent-
-stream cap, scoped to the streaming endpoints. Purely in-process — fine
-for a single instance; swap for a Redis-backed limiter if you ever scale
-to multiple instances behind a shared load balancer.
-"""
-
 import logging
 import time
 from collections import defaultdict, deque

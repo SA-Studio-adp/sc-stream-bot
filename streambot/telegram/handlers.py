@@ -1,9 +1,3 @@
-"""
-All Telegram message/callback handlers, registered explicitly via
-register_handlers(bot). No decorator-based auto-discovery — see the
-docstring in telegram/client.py for why.
-"""
-
 import asyncio
 import datetime
 import logging
@@ -45,10 +39,6 @@ _broadcast_state: dict = {}
 
 
 def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
-    """Attach every handler to `bot`. Called once at startup, after the
-    event loop is fully set up."""
-
-    # ------------------------------------------------------------ /start
     async def start(client: Client, message: Message):
         if not await verify_user(client, message):
             return
@@ -100,7 +90,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         else:
             await message.reply_text("**Invalid Command**")
 
-    # ------------------------------------------------------------- /help
     async def help_handler(client: Client, message: Message):
         if not await verify_user(client, message):
             return
@@ -112,7 +101,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
             await message.reply_text(text=caption, parse_mode=ParseMode.HTML,
                                       disable_web_page_preview=True, reply_markup=BUTTON.HELP_BUTTONS)
 
-    # ------------------------------------------------------------ /about
     async def about_handler(client: Client, message: Message):
         if not await verify_user(client, message):
             return
@@ -123,7 +111,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         else:
             await message.reply_text(text=caption, disable_web_page_preview=True, reply_markup=BUTTON.ABOUT_BUTTONS)
 
-    # ------------------------------------------------------------ /files
     async def my_files(client: Client, message: Message):
         if not await verify_user(client, message):
             return
@@ -145,7 +132,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         await message.reply_photo(photo=Telegram.FILE_PIC, caption=f"Total files: {total_files}",
                                    reply_markup=InlineKeyboardMarkup(file_list))
 
-    # ------------------------------------------------------- media intake
     async def private_receive_handler(client: Client, message: Message):
         if not await is_user_authorized(message):
             return
@@ -198,7 +184,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
                                        disable_web_page_preview=True)
             logger.error(f"Can't edit broadcast message: {e}")
 
-    # --------------------------------------------------------- admin: /status
     async def status_handler(client: Client, message: Message):
         db = get_database()
         loads = "\n".join(f"  • Client {cid}: `{load}` active streams" for cid, load in work_loads.items())
@@ -215,7 +200,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
             parse_mode=ParseMode.MARKDOWN, quote=True,
         )
 
-    # ----------------------------------------------------------- admin: /ban
     async def ban_handler(client: Client, message: Message):
         db = get_database()
         target_id = message.text.split("/ban ")[-1]
@@ -232,7 +216,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         except Exception as e:
             await message.reply_text(text=f"**something went wrong: {e}** ", parse_mode=ParseMode.MARKDOWN, quote=True)
 
-    # --------------------------------------------------------- admin: /unban
     async def unban_handler(client: Client, message: Message):
         db = get_database()
         target_id = message.text.split("/unban ")[-1]
@@ -248,7 +231,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         except Exception as e:
             await message.reply_text(text=f"** something went wrong: {e}**", parse_mode=ParseMode.MARKDOWN, quote=True)
 
-    # ------------------------------------------------------- admin: /broadcast
     async def broadcast_handler(client: Client, message: Message):
         db = get_database()
         all_users = await db.get_all_users()
@@ -294,7 +276,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
             await message.reply_document(document="broadcast.txt", caption=summary, quote=True)
         os.remove("broadcast.txt")
 
-    # ------------------------------------------------------------ admin: /del
     async def delete_handler(client: Client, message: Message):
         db = get_database()
         file_id = message.text.split(" ")[-1]
@@ -307,7 +288,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         await db.count_links(file_info["user_id"], "-")
         await message.reply_text(text="**Fɪʟᴇ Dᴇʟᴇᴛᴇᴅ Sᴜᴄᴄᴇssғᴜʟʟʏ !** ", quote=True)
 
-    # --------------------------------------------------------------- callbacks
     async def gen_file_list_button(file_list_no: int, user_id: int):
         db = get_database()
         file_range = [file_list_no * 10 - 10 + 1, file_list_no * 10]
@@ -451,7 +431,6 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         else:
             await update.message.delete()
 
-    # --------------------------------------------------------------- register
     owner_filter = filters.private & filters.user(Telegram.OWNER_ID)
     bot.add_handler(MessageHandler(start, filters.command("start") & filters.private))
     bot.add_handler(MessageHandler(help_handler, filters.command("help") & filters.private))

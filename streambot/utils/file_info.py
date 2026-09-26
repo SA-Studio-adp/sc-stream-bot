@@ -1,9 +1,3 @@
-"""
-Everything to do with extracting metadata from a Telegram Message/media,
-and re-posting media to the log channel so every Pyrogram client (in
-multi-client mode) has its own valid file_id for streaming.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -41,11 +35,6 @@ def get_media_file_size(message: Message):
 
 
 def get_name(media_msg: Message | FileId) -> str:
-    """Derive a display filename. Defensive against being handed neither
-    a real Message nor a real FileId (can happen when there's no live
-    chat message behind a request, e.g. a direct download link) — in that
-    case falls straight through to a generated placeholder name instead
-    of crashing."""
     file_name = ""
     if isinstance(media_msg, Message):
         media = get_media_from_message(media_msg)
@@ -90,16 +79,6 @@ def get_file_info(message: Message) -> dict:
 
 
 async def send_file(client: Client, db_id, file_id: str, message, fallback_file_name: str = None) -> Message:
-    """Re-post the media to FLOG_CHANNEL so `client` has its own copy with
-    a file_id valid for it specifically (needed for multi-client mode).
-
-    `message` is the original chat Message when this came from a live
-    upload/command, but may not be a real Message at all when it's
-    triggered by a direct stream link with no chat context — in that case
-    we fall back to the file's already-known name from the database and
-    skip the "requested by" log line, since there's nothing to attribute
-    it to.
-    """
     is_real_message = isinstance(message, Message)
 
     if is_real_message:
@@ -130,8 +109,6 @@ async def send_file(client: Client, db_id, file_id: str, message, fallback_file_
 
 
 async def update_file_id(msg_id: int, multi_clients: dict) -> dict:
-    """Fetch the log message with every multi-client and record each
-    client's own file_id for it."""
     file_ids = {}
     for client_id, client in multi_clients.items():
         log_msg = await client.get_messages(Telegram.FLOG_CHANNEL, msg_id)
@@ -141,9 +118,6 @@ async def update_file_id(msg_id: int, multi_clients: dict) -> dict:
 
 
 async def get_file_ids(client, db_id: str, multi_clients: dict, message, main_bot) -> Optional[FileId]:
-    """Resolve (and lazily populate) the FileId a specific client needs to
-    stream this file. `client` may be falsy to mean "just populate every
-    client's file_id, I don't need one back right now"."""
     db = get_database()
     file_info = await db.get_file(db_id)
 

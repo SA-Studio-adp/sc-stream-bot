@@ -1,19 +1,3 @@
-"""
-Entrypoint. Order here is deliberate and matters:
-
-1. uvloop is installed before ANYTHING else touches asyncio or constructs
-   a Pyrogram Client — Pyrogram binds internal async primitives (its
-   update-dispatch queue, locks) to whatever loop exists at construction
-   time. Installing uvloop afterward would leave those primitives attached
-   to a loop that's never actually run, which silently breaks incoming
-   message handling (the exact bug that hit the previous version).
-2. Config is validated before anything connects to anything, so a bad
-   deployment fails in the first second with a readable message instead
-   of a deep traceback.
-3. Handlers are registered explicitly (register_handlers), not through
-   Pyrogram's plugins= auto-discovery — see telegram/handlers.py.
-"""
-
 import asyncio
 import logging
 import sys

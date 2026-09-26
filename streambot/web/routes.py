@@ -24,9 +24,6 @@ def build_routes(bot, multi_clients: dict, work_loads: dict) -> web.RouteTableDe
 
     @routes.get("/ping", allow_head=True)
     async def ping_route_handler(_):
-        """Cheap endpoint hit by the keep-alive task (and any external
-        uptime monitor) so the host sees traffic without touching Telegram
-        or the database at all."""
         return web.json_response({"status": "alive", "uptime": time.time() - StartTime})
 
     @routes.get("/status", allow_head=True)
