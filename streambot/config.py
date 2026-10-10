@@ -77,10 +77,27 @@ class Performance:
     CACHE_TIME = int(env.get("CACHE_TIME", str(30 * 60)))
     MAX_STREAMS_PER_IP = int(env.get("MAX_STREAMS_PER_IP", "8"))
     RATE_LIMIT_REQUESTS = int(env.get("RATE_LIMIT_REQUESTS", "60"))
+    # /api/* (track list, subtitle polling, audio) gets its own, looser bucket so viewers
+    # sharing one carrier/NAT IP don't starve each other or eat the /dl budget
+    API_RATE_LIMIT_REQUESTS = int(env.get("API_RATE_LIMIT_REQUESTS", "300"))
     RATE_LIMIT_WINDOW = int(env.get("RATE_LIMIT_WINDOW", "60"))
     STREAM_RETRIES = int(env.get("STREAM_RETRIES", "3"))
     STREAM_RETRY_DELAY = float(env.get("STREAM_RETRY_DELAY", "1.0"))
     MAX_CONCURRENT_TRANSMISSIONS = int(env.get("MAX_CONCURRENT_TRANSMISSIONS", "6"))
+
+
+class Media:
+    """ffmpeg-powered track tools (audio switching + embedded subtitles)."""
+    ENABLED = _bool("MEDIA_TOOLS", "1")
+    FFMPEG = str(env.get("FFMPEG_PATH", "ffmpeg"))
+    FFPROBE = str(env.get("FFPROBE_PATH", "ffprobe"))
+    CACHE_DIR = str(env.get("MEDIA_CACHE_DIR", "/tmp/scfiles-media"))
+    CACHE_MAX_FILES = int(env.get("MEDIA_CACHE_MAX_FILES", "200"))
+    PROBE_TTL = int(env.get("MEDIA_PROBE_TTL", str(6 * 3600)))
+    MAX_AUDIO_STREAMS = int(env.get("MEDIA_MAX_AUDIO_STREAMS", "2"))
+    SUB_TIMEOUT = int(env.get("MEDIA_SUB_TIMEOUT", "1800"))
+    AUDIO_BITRATE = str(env.get("MEDIA_AUDIO_BITRATE", "128k"))
+    CORS_ORIGINS = str(env.get("CORS_ORIGINS", "*"))
 
 
 def validate_and_bind():
