@@ -14,6 +14,7 @@ PUBLIC_COMMANDS = [
 
 OWNER_COMMANDS = PUBLIC_COMMANDS + [
     BotCommand("status", "Show bot/server stats"),
+    BotCommand("restart", "Restart the server and clear caches"),
     BotCommand("ban", "Ban a user or channel by ID"),
     BotCommand("unban", "Unban a user or channel by ID"),
     BotCommand("broadcast", "Reply to a message to broadcast it to all users"),

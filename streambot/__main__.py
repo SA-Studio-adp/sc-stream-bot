@@ -20,6 +20,7 @@ from streambot.telegram.bot_commands import update_bot_commands
 from streambot.telegram.client import create_bot, start_extra_clients
 from streambot.telegram.handlers import register_handlers
 from streambot.telegram.keep_alive import keep_alive
+from streambot.telegram import restart
 from streambot.web.app import build_web_app
 
 configure_logging()
@@ -79,6 +80,8 @@ async def start_services():
     print("--------------------- Starting Keep-Alive Task ---------------------")
     asyncio.create_task(keep_alive())
     print("------------------------------ DONE ------------------------------\n")
+
+    await restart.announce_if_restarted(bot)   # "Back online" after /restart
 
     print("------------------------- Service Started -------------------------")
     print(f"                        bot =>> {bot_info.first_name}")

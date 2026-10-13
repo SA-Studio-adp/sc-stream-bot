@@ -22,6 +22,9 @@ from streambot.config import Media, Server
 
 logger = logging.getLogger(__name__)
 
+# every ffmpeg/ffprobe child we started; /restart kills these so nothing is orphaned
+_procs: set = set()
+
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 TEXT_SUB_CODECS = {"subrip", "srt", "ass", "ssa", "webvtt", "mov_text", "text"}
 
@@ -108,12 +111,15 @@ async def probe(db_id: str) -> dict:
                 source_url(db_id),
                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
             )
+            _procs.add(proc)
             try:
                 out, err = await asyncio.wait_for(proc.communicate(), 60)
             except asyncio.TimeoutError:
                 proc.kill()
                 await proc.wait()
                 raise MediaError("probe timed out", 504)
+            finally:
+                _procs.discard(proc)
         if proc.returncode != 0:
             msg = err.decode(errors="replace")
             status = 404 if "404" in msg else 502
@@ -160,6 +166,7 @@ async def _extract_sub(db_id: str, n: int, dest: Path):
             "-vn", "-an", "-dn", "-c:s", "webvtt", "-f", "webvtt", "-y", str(tmp),
             stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE,
         )
+        _procs.add(proc)
         try:
             _, err = await asyncio.wait_for(proc.communicate(), Media.SUB_TIMEOUT)
         except asyncio.TimeoutError:
@@ -167,6 +174,8 @@ async def _extract_sub(db_id: str, n: int, dest: Path):
             await proc.wait()
             tmp.unlink(missing_ok=True)
             raise MediaError("subtitle extraction timed out")
+        finally:
+            _procs.discard(proc)
     if proc.returncode != 0 or not tmp.exists():
         tmp.unlink(missing_ok=True)
         logger.warning(f"subtitle extract failed for {db_id} s{n}: {err.decode(errors='replace')[:300]}")
@@ -232,6 +241,7 @@ async def stream_audio(request, response, db_id: str, n: int, start: float):
         "-f", "mp3", "pipe:1",
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
     )
+    _procs.add(proc)
     try:
         await response.prepare(request)
         while True:
@@ -244,6 +254,46 @@ async def stream_audio(request, response, db_id: str, n: int, start: float):
         pass
     finally:
         _audio_active -= 1
+        _procs.discard(proc)
         if proc.returncode is None:
             proc.kill()
         await proc.wait()
+
+
+# --------------------------------------------------------------------------- reset
+def clear_all() -> dict:
+    """Stop every ffmpeg/ffprobe job and forget everything cached (used by /restart).
+
+    Returns counts so the owner can see what was cleared.
+    """
+    killed = 0
+    for proc in list(_procs):
+        if proc.returncode is None:
+            try:
+                proc.kill()
+                killed += 1
+            except ProcessLookupError:
+                pass
+    _procs.clear()
+
+    for task in list(_sub_tasks.values()):
+        task.cancel()
+    probes = len(_probe_cache)
+    _probe_cache.clear()
+    _probe_locks.clear()
+    _sub_tasks.clear()
+    _sub_errors.clear()
+
+    files = freed = 0
+    d = Path(Media.CACHE_DIR)
+    if d.is_dir():
+        for f in d.iterdir():
+            if f.is_file():
+                try:
+                    size = f.stat().st_size
+                    f.unlink()
+                    files += 1
+                    freed += size
+                except OSError:
+                    pass
+    return {"jobs_killed": killed, "track_lists": probes, "subtitle_files": files, "bytes_freed": freed}

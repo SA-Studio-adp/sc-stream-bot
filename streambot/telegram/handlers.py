@@ -19,6 +19,7 @@ from streambot import StartTime, __version__
 from streambot.config import Server, Telegram
 from streambot.database import get_database
 from streambot.exceptions import FileNotFound
+from streambot.telegram import restart
 from streambot.telegram.broadcast import send_broadcast
 from streambot.telegram.guards import (
     gen_link, gen_linkx, is_channel_banned, is_channel_exist,
@@ -199,6 +200,20 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
 {loads or "  • n/a"}""",
             parse_mode=ParseMode.MARKDOWN, quote=True,
         )
+
+    async def restart_handler(client: Client, message: Message):
+        if restart.is_restarting():
+            await message.reply_text("A restart is already in progress.", quote=True)
+            return
+        stats = restart.clear_caches()
+        summary = restart.describe(stats)
+        note = await message.reply_text(
+            f"♻️ **Restarting the server…**\n\n**Cleared:**\n{summary}\n\n"
+            "Active streams will drop and reconnect. Back in roughly 10–30 s.",
+            parse_mode=ParseMode.MARKDOWN, quote=True,
+        )
+        restart.save_state(message.chat.id, note.id, summary)
+        restart.schedule_restart([client, *multi_clients.values()])
 
     async def ban_handler(client: Client, message: Message):
         db = get_database()
@@ -442,6 +457,7 @@ def register_handlers(bot: Client, multi_clients: dict, work_loads: dict):
         filters.channel & ~filters.forwarded & ~filters.media_group & MEDIA_FILTER,
     ))
     bot.add_handler(MessageHandler(status_handler, filters.command("status") & owner_filter))
+    bot.add_handler(MessageHandler(restart_handler, filters.command("restart") & owner_filter))
     bot.add_handler(MessageHandler(ban_handler, filters.command("ban") & owner_filter))
     bot.add_handler(MessageHandler(unban_handler, filters.command("unban") & owner_filter))
     bot.add_handler(MessageHandler(broadcast_handler, filters.command("broadcast") & owner_filter & filters.reply))
